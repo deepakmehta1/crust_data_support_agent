@@ -1,8 +1,13 @@
 from fastapi import APIRouter, HTTPException
 from ..services.conversation import conversation_service
-from ..models.conversation import StartConversationRequest, SendMessageRequest, SendMessageResponse
+from ..models.conversation import (
+    StartConversationRequest,
+    SendMessageRequest,
+    SendMessageResponse,
+)
 
 router = APIRouter()
+
 
 # Endpoint to start conversation
 @router.post("/start", response_model=dict)
@@ -11,7 +16,10 @@ async def start_conversation(request: StartConversationRequest):
         result = conversation_service.start_conversation(request.user_id)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error starting conversation: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error starting conversation: {str(e)}"
+        )
+
 
 # Endpoint to send message
 @router.post("/send", response_model=SendMessageResponse)

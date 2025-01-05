@@ -12,6 +12,7 @@ python = "^3.12"
 fastapi = {extras = ["standard"], version = "^0.115.6"}
 uvicorn = "^0.34.0"
 pydantic = "^2.10.4"
+black = "^24.10.0"
 
 [build-system]
 requires = ["poetry-core"]
