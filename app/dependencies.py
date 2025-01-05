@@ -1,10 +1,11 @@
 from app.services.conversation import ConversationService
 from app.services.knowledge_base import insert_api_doc, search_api_doc
+from app.config.db import db
 
 
 # Dependency provider for ConversationService
 def get_conversation_service():
-    return ConversationService()
+    return ConversationService(db)
 
 
 # Dependency provider for the Knowledge Base service functions

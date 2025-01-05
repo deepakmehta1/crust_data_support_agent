@@ -5,7 +5,7 @@ from app.models.knowledge_base import ApiDoc
 from pymongo.errors import PyMongoError
 from openai import OpenAI
 import numpy as np
-from app.config.db import collection
+from app.config.db import api_doc_collection
 import os
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -47,7 +47,7 @@ async def insert_api_doc(api_doc: ApiDoc):
         document = api_doc.model_dump(exclude_unset=True)
         document["vector"] = description_vector
 
-        result = await collection.insert_one(document)
+        result = await api_doc_collection.insert_one(document)
         return {"id": str(result.inserted_id), "message": "successfully inserted"}
     except PyMongoError as e:
         return {"error": str(e)}
@@ -72,7 +72,7 @@ async def search_api_doc(description_query: str, top_n: int = 10) -> List[Dict]:
         )
         query_vector = response.data[0].embedding
 
-        cursor = collection.find(
+        cursor = api_doc_collection.find(
             {}, {"name": 1, "description": 1, "data": 1, "response": 1, "vector": 1}
         )
 

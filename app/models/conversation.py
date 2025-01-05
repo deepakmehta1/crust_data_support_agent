@@ -6,11 +6,13 @@ class StartConversationRequest(BaseModel):
 
 
 class SendMessageRequest(BaseModel):
+    conversation_id: str
     user_id: str
     message: str
 
 
 class SendMessageResponse(BaseModel):
+    conversation_id: str
     user_id: str
     message: str
     response: str
