@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from ..models.conversation import (
+from app.models.conversation import (
     StartConversationRequest,
     SendMessageRequest,
     SendMessageResponse,
 )
-from ..dependencies import get_conversation_service
-from ..services.conversation import ConversationService
+from app.dependencies import get_conversation_service
+from app.services.conversation import ConversationService
 
 router = APIRouter()
 
