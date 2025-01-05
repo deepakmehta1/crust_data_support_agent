@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "crust-data-support-agent"
+version = "0.1.0"
+description = ""
+authors = ["deepakmehta1 <deepak.deep40@yahoo.com>"]
+readme = "README.md"
+package-mode = false  # Disable packaging mode (no packaging of your app)
+
+# Don't specify the packages section here if you disable package mode
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = {extras = ["standard"], version = "^0.115.6"}
+uvicorn = "^0.34.0"
+pydantic = "^2.10.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
