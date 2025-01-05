@@ -12,6 +12,14 @@ print("api_key:", os.getenv("OPENAI_API_KEY"))
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
+# Function to compute cosine similarity between two vectors
+def cosine_similarity(v1, v2):
+    dot_product = np.dot(v1, v2)
+    norm_v1 = np.linalg.norm(v1)
+    norm_v2 = np.linalg.norm(v2)
+    return dot_product / (norm_v1 * norm_v2)
+
+
 async def insert_api_doc(api_doc: ApiDoc):
     try:
         # Generate the vector for the description using OpenAI's embeddings
@@ -32,7 +40,7 @@ async def insert_api_doc(api_doc: ApiDoc):
         return {"error": f"Failed to generate vector: {str(e)}"}
 
 
-async def search_api_doc(description_query: str) -> List[Dict]:
+async def search_api_doc(description_query: str, top_n: int = 10) -> List[Dict]:
     try:
         # Generate the vector for the search query description using OpenAI's embeddings
         response = client.embeddings.create(
@@ -40,45 +48,26 @@ async def search_api_doc(description_query: str) -> List[Dict]:
         )
         query_vector = response.data[0].embedding  # Extract the embedding vector
 
-        # Find similar documents based on vector search (we'll compute cosine similarity)
-        cursor = collection.aggregate(
-            [
-                {
-                    "$project": {
-                        "name": 1,
-                        "description": 1,
-                        "data": 1,
-                        "response": 1,
-                        "vector": 1,  # Store the vector in your MongoDB documents
-                    }
-                },
-                {
-                    "$match": {
-                        # Matching condition based on vector similarity (cosine similarity)
-                        "$expr": {
-                            "$gte": [
-                                {
-                                    "$function": {
-                                        "body": """
-                                    function(v1, v2) {
-                                        const dot_product = v1.reduce((sum, val, idx) => sum + val * v2[idx], 0);
-                                        const magnitude_v1 = Math.sqrt(v1.reduce((sum, val) => sum + val * val, 0));
-                                        const magnitude_v2 = Math.sqrt(v2.reduce((sum, val) => sum + val * val, 0));
-                                        return dot_product / (magnitude_v1 * magnitude_v2); 
-                                    }
-                                """,
-                                        "args": ["$vector", query_vector],
-                                        "lang": "js",
-                                    }
-                                },
-                                0.8,  # Set a threshold for similarity (0.8 means the descriptions are 80% similar)
-                            ]
-                        }
-                    }
-                },
-            ]
+        # Fetch documents from MongoDB
+        cursor = collection.find(
+            {}, {"name": 1, "description": 1, "data": 1, "response": 1, "vector": 1}
         )
-        return await cursor.to_list(length=10)  # Return top 10 matches
+
+        # List to hold documents with similarity scores
+        results_with_scores = []
+
+        async for document in cursor:
+            # Calculate cosine similarity between query vector and document's vector
+            doc_vector = document.get("vector")
+            if doc_vector:
+                score = cosine_similarity(np.array(query_vector), np.array(doc_vector))
+                results_with_scores.append((document, score))
+
+        # Sort results by cosine similarity score in descending order
+        results_with_scores.sort(key=lambda x: x[1], reverse=True)
+
+        # Return top_n matches
+        return [doc for doc, score in results_with_scores[:top_n]]
 
     except PyMongoError as e:
         return {"error": str(e)}
