@@ -1,4 +1,4 @@
-class MockConversationService:
+class ConversationService:
     def start_conversation(self, user_id: str) -> dict:
         return {
             "message": f"Conversation started for user {user_id}",
@@ -12,7 +12,3 @@ class MockConversationService:
             "response": f"Echo: {message}",
             "status": "message_sent",
         }
-
-
-# Initialize the service
-conversation_service = MockConversationService()

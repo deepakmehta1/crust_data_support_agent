@@ -1,17 +1,21 @@
-from fastapi import APIRouter, HTTPException
-from ..services.conversation import conversation_service
+from fastapi import APIRouter, Depends, HTTPException
 from ..models.conversation import (
     StartConversationRequest,
     SendMessageRequest,
     SendMessageResponse,
 )
+from ..dependencies import get_conversation_service
+from ..services.conversation import ConversationService
 
 router = APIRouter()
 
 
-# Endpoint to start conversation
+# Start conversation endpoint using dependency injection
 @router.post("/start", response_model=dict)
-async def start_conversation(request: StartConversationRequest):
+async def start_conversation(
+    request: StartConversationRequest,
+    conversation_service: ConversationService = Depends(get_conversation_service),
+):
     try:
         result = conversation_service.start_conversation(request.user_id)
         return result
@@ -21,9 +25,12 @@ async def start_conversation(request: StartConversationRequest):
         )
 
 
-# Endpoint to send message
+# Send message endpoint using dependency injection
 @router.post("/send", response_model=SendMessageResponse)
-async def send_message(request: SendMessageRequest):
+async def send_message(
+    request: SendMessageRequest,
+    conversation_service: ConversationService = Depends(get_conversation_service),
+):
     try:
         result = conversation_service.send_message(request.user_id, request.message)
         return result

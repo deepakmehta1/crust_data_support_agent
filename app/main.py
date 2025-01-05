@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .api import conversation
+from app.api import conversation
 
 # Initialize FastAPI app
 app = FastAPI(title="Crust Data Support Agent")
