@@ -16,43 +16,30 @@ if not OPENAI_API_KEY:
 MODEL_NAME = "gpt-4o-2024-08-06"  # Ensure you have access to this model
 
 
-def generate_system_prompt(knowledge_base: dict) -> dict:
+def generate_system_prompt() -> dict:
     """
-    Generates the system prompt to guide the assistant's response to the customer,
-    including knowledge base information for accurate Crustdata API guidance, and the agentic loop.
+    Generates the system prompt to guide the assistant's response to the customer.
+    The assistant decides whether to make a function call based on the user's query.
+    If the query requires an API document, it triggers the function call.
+    If the query does not require an API search, it directly responds to the user.
 
-    :param knowledge_base: The knowledge base result to be used in the prompt.
     :return: The system prompt as a dictionary.
     """
-    knowledge_base_description = f"""
-    Here is the relevant information from the Crustdata API:
-    - Name: {knowledge_base.get('name')}
-    - Description: {knowledge_base.get('description')}
-    - Data: {knowledge_base.get('data', 'No additional data available')}
-    - Response: {knowledge_base.get('response')}
-    
-    Your task is to help the customer use the appropriate Crustdata API based on this information.
-    Respond in a humble, clear, and concise manner, only providing relevant information about Crustdata APIs.
-    """
-
-    system_prompt_content = f"""
+    system_prompt_content = """
     You run in a loop of Thought, Action, PAUSE, Action_Response.
 
     At the end of the loop you output an Answer.
 
-    Use Thought to understand the question you have been asked. 
-    Use Action to identify the appropriate Crustdata API based on the question and knowledge base information.
-    Break the question down into relevant steps, like selecting the correct API endpoint and preparing the request.
-    Then, return PAUSE to signify the pause after gathering the necessary API information.
+    Use Thought to understand the question you have been asked.
+    Use Action to determine if the query requires an API document search or if the response can be directly given.
+    - If the query requires the Crustdata API documentation, trigger a function call with the user's query to search for relevant API details.
+    - If the query does not require an API search, respond directly to the user with the relevant information.
+    
+    Action_Response will be either the result of the function call (the API document) or a direct answer to the user's question.
 
-    Action_Response will be the structured response to the customer, in a format suitable for copy-pasting in the terminal (either in `curl` or Python `requests`).
-
-    Knowledge Base Details:
-    {knowledge_base_description}
-
-    Your response should focus solely on Crustdata API guidance, providing detailed and structured responses based on the knowledge base.
+    Your response should focus solely on Crustdata API guidance or the appropriate response to the user's query. 
     Stay humble and don't engage in anything beyond the subject of Crustdata APIs.
-    Always provide the response in a way that the user can simply copy and paste it into their terminal.
+    Always provide the response in a format suitable for the user to copy-paste into their terminal.
     """
 
     return {"role": "system", "content": system_prompt_content}

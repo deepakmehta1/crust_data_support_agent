@@ -27,7 +27,9 @@ class ConversationService:
             dict: A dictionary containing the message, conversation ID, and status.
         """
         conversation = Conversation(user_id=user_id, status="started", messages=[])
-        result = await self.conversations_collection.insert_one(conversation.dict())
+        result = await self.conversations_collection.insert_one(
+            conversation.model_dump()
+        )
         conversation_id = str(result.inserted_id)
         return {
             "message": f"Conversation started for user {user_id}",
@@ -35,9 +37,7 @@ class ConversationService:
             "status": "started",
         }
 
-    async def store_message(
-        self, conversation: Conversation, message_obj: Message, name: str = None
-    ) -> bool:
+    async def store_message(self, conversation_id: str, message_obj: Message) -> bool:
         """
         Stores a message in an ongoing conversation.
 
@@ -49,9 +49,9 @@ class ConversationService:
             bool: True if the message was successfully stored, False otherwise.
         """
         try:
-            conversation_update = {"$push": {"messages": message_obj.dict()}}
+            conversation_update = {"$push": {"messages": message_obj.model_dump()}}
             await self.conversations_collection.update_one(
-                {"_id": ObjectId(conversation.id)}, conversation_update
+                {"_id": ObjectId(conversation_id)}, conversation_update
             )
             return True
         except Exception:

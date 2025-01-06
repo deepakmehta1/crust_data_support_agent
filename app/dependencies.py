@@ -23,23 +23,9 @@ def get_search_api_doc():
 
 # Dependency provider for the Agent
 async def get_agent(
-    request: SendMessageRequest,  # Use the request object to get message and conversation_id
+    request: SendMessageRequest,
     conversation_service: ConversationService = Depends(get_conversation_service),
-    search_api_doc: callable = Depends(
-        get_search_api_doc
-    ),  # Dependency for searching knowledge base
 ):
-    # Use the user message to search the knowledge base for relevant context
-    knowledge_base_results = await search_api_doc(
-        request.message
-    )  # This will return relevant API information
-
-    # Generate the system prompt dynamically using the knowledge base
-    system_prompt = generate_system_prompt(knowledge_base_results[0])
-
-    # Create the agent instance using the generated system prompt and conversation data
-    return Agent(
-        system_prompt=system_prompt,
-        conversation_id=request.conversation_id,
-        conversation_service=conversation_service,
+    return await Agent.create(
+        generate_system_prompt(), request.conversation_id, conversation_service
     )

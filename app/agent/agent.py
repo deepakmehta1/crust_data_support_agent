@@ -37,7 +37,26 @@ class Agent:
         self.conversation_service = conversation_service
         self.tools = tools
         self.conversation_id = conversation_id
-        self.conversation = conversation_service.get_conversation(conversation_id)
+        self.conversation = None
+
+    @classmethod
+    async def create(
+        cls,
+        system_prompt: dict,
+        conversation_id: str,
+        conversation_service: ConversationService,
+        tools: Dict[str, callable] = get_tools(),
+    ) -> "Agent":
+        # Create the agent instance
+        instance = cls(system_prompt, conversation_id, conversation_service, tools)
+
+        # Now we can await the async method to get the conversation
+        instance.conversation = await conversation_service.get_conversation(
+            conversation_id
+        )
+
+        # Return the fully initialized instance
+        return instance
 
     async def __get_messages(self) -> List[dict]:
         """
@@ -53,7 +72,15 @@ class Agent:
 
         # Parse the conversation into a list of messages with role and content
         messages = [
-            {"role": message.role, "content": message.content}
+            (
+                {
+                    "role": message["role"],
+                    "content": message["content"],
+                    "name": message["name"],
+                }
+                if "name" in message
+                else {"role": message["role"], "content": message["content"]}
+            )
             for message in conversation_data["messages"]
         ]
 
@@ -76,6 +103,7 @@ class Agent:
             role=role,
             content=content,
             status="message_sent",
+            name=name,
             timestamp=datetime.now(timezone.utc),
         )
 
@@ -136,7 +164,7 @@ class Agent:
                                 func
                             )  # Get the function signature
                             bound_args = signature.bind(
-                                self.db_connector, **args
+                                **args
                             )  # Bind arguments to the function signature
                             bound_args.apply_defaults()  # Apply default values for missing arguments
                             args = list(
@@ -144,13 +172,13 @@ class Agent:
                             )  # Convert to a list for function call
 
                     # Execute the tool based on the mapped arguments
-                    result = self.execute_tool(tool_name, args)
+                    result = await self.execute_tool(tool_name, args)
                     print(f"Tool result: {result}")
                     result_string = f"Tool result for {args_str}: {result}"
 
                     # Send the tool result back to the model if it is a tool call
-                    self.conversation_service.store_message(
-                        self.conversation,
+                    await self.conversation_service.store_message(
+                        self.conversation_id,
                         self.__build_message(
                             "function", result_string, tool_call.function.name
                         ),
@@ -165,7 +193,7 @@ class Agent:
             print(f"Error calling OpenAI API: {e}")
             return None, None  # Return None if an error occurs
 
-    def execute_tool(self, tool: str, args: List) -> str:
+    async def execute_tool(self, tool: str, args: List) -> str:
         """
         Executes the tool based on the provided name and arguments.
 
@@ -179,7 +207,7 @@ class Agent:
         func = self.tools.get(tool)
         if func:
             try:
-                result = func(*args)
+                result = await func(*args)
                 return result
             except Exception as e:
                 return f"Error executing tool '{tool}': {e}"
@@ -195,8 +223,8 @@ class Agent:
         Returns:
             - The final assistant message or tool result.
         """
-        self.conversation_service.store_message(
-            self.conversation, self.__build_message("user", user_input)
+        await self.conversation_service.store_message(
+            self.conversation_id, self.__build_message("user", user_input)
         )
 
         while True:
@@ -209,8 +237,8 @@ class Agent:
             else:
                 # If it's the assistant's final response, return it to the user
                 print(f"Internal processing: {assistant_response}")
-                self.conversation_service.store_message(
-                    self.conversation,
+                await self.conversation_service.store_message(
+                    self.conversation_id,
                     self.__build_message("assistant", assistant_response.content),
                 )
                 if (

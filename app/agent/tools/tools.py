@@ -1,10 +1,11 @@
-# tools/tools.py
+from .schemas import search_api_schema
+from .functions import search_api
 
 # Tools dictionary mapping function names to actual functions
-TOOLS = {}
+TOOLS = {"search_api": search_api}
 
 # List of tool schemas
-TOOL_SCHEMAS = []
+TOOL_SCHEMAS = [search_api_schema]
 
 
 # Functions to access tools and schemas

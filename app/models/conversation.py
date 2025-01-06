@@ -7,6 +7,7 @@ class Message(BaseModel):
     role: str
     content: str
     status: str
+    name: str | None = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
