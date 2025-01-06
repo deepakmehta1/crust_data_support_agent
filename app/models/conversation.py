@@ -4,9 +4,8 @@ from datetime import datetime, timezone
 
 
 class Message(BaseModel):
-    user_id: str
-    message: str
-    response: str
+    role: str
+    content: str
     status: str
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
