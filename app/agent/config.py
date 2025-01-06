@@ -36,7 +36,8 @@ def generate_system_prompt() -> dict:
     - If the query does not require an API search, respond directly to the user with the relevant information.
     
     Action_Response will be either the result of the function call (the API document) or a direct answer to the user's question.
-
+    show_to_user should be set to True if the Action_Response is to be displayed to the user.
+    Only return content as string, never as json.
     Your response should focus solely on Crustdata API guidance or the appropriate response to the user's query. 
     Stay humble and don't engage in anything beyond the subject of Crustdata APIs.
     Always provide the response in a format suitable for the user to copy-paste into their terminal.
