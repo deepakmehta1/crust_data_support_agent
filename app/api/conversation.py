@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.dependencies import get_conversation_service
+from app.dependencies import get_conversation_service, get_agent
+from app.agent.agent import Agent
 from app.services.conversation import ConversationService
 from app.models import (
     StartConversationRequest,
@@ -32,26 +33,17 @@ async def start_conversation(
         )
 
 
-# Send message endpoint using dependency injection
 @router.post("/send", response_model=SendMessageResponse)
 async def send_message(
     request: SendMessageRequest,
-    conversation_service: ConversationService = Depends(get_conversation_service),
+    agent: Agent = Depends(get_agent),
 ):
     """
     Sends a message in an ongoing conversation identified by conversation_id.
     """
     try:
-        result = await conversation_service.send_message(
-            request.conversation_id, request.user_id, request.message
-        )
-        return SendMessageResponse(
-            conversation_id=result["conversation_id"],
-            user_id=result["user_id"],
-            message=result["message"],
-            response=result["response"],
-            status=result["status"],
-            timestamp=result["timestamp"],
-        )
+        # Using agent to interact with the user
+        agent_response = await agent.interact(request.message)
+        return SendMessageResponse(agent=agent_response)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error sending message: {str(e)}")

@@ -15,9 +15,4 @@ class SuccessResponse(BaseModel):
 
 
 class SendMessageResponse(BaseModel):
-    conversation_id: str
-    user_id: str
-    message: str
-    response: str
-    status: str
-    timestamp: str
+    agent: str

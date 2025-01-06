@@ -6,7 +6,7 @@ import json
 from app.models.conversation import Message
 from .config import OPENAI_API_KEY, MODEL_NAME
 from app.services.conversation import ConversationService
-from tools.tools import (
+from .tools.tools import (
     get_tools,
     get_tool_schemas,
 )
@@ -36,9 +36,10 @@ class Agent:
         self.system_prompt = system_prompt
         self.conversation_service = conversation_service
         self.tools = tools
+        self.conversation_id = conversation_id
         self.conversation = conversation_service.get_conversation(conversation_id)
 
-    def __get_messages(self) -> List[dict]:
+    async def __get_messages(self) -> List[dict]:
         """
         Retrieves the list of messages from the system prompt and memory.
 
@@ -46,7 +47,9 @@ class Agent:
             List of messages to send to the LLM (Large Language Model).
         """
         # Retrieve the conversation from the conversation service
-        conversation_data = self.conversation_service.get_conversation()
+        conversation_data = await self.conversation_service.get_conversation(
+            self.conversation_id
+        )
 
         # Parse the conversation into a list of messages with role and content
         messages = [
@@ -76,7 +79,7 @@ class Agent:
             timestamp=datetime.now(timezone.utc),
         )
 
-    def call_llm(self) -> Tuple[Optional[str], str]:
+    async def call_llm(self) -> Tuple[Optional[str], str]:
         """
         Calls the LLM (Large Language Model) API and processes the response.
 
@@ -88,7 +91,7 @@ class Agent:
             # Send request to LLM with messages and tools
             response = self.client.beta.chat.completions.parse(
                 model=MODEL_NAME,
-                messages=self.__get_messages(),
+                messages=await self.__get_messages(),
                 temperature=0,
                 max_tokens=1000,
                 n=1,
@@ -182,7 +185,7 @@ class Agent:
                 return f"Error executing tool '{tool}': {e}"
         return f"Tool '{tool}' not found."
 
-    def interact(self, user_input: str) -> str:
+    async def interact(self, user_input: str) -> str:
         """
         Processes the user's input, interacts with the assistant, and manages tool calls.
 
@@ -197,7 +200,7 @@ class Agent:
         )
 
         while True:
-            assistant_response, message_type = self.call_llm()  # Call the LLM
+            assistant_response, message_type = await self.call_llm()  # Call the LLM
 
             if message_type == "tools":
                 # If it's a tool call, process it and send the result back to the model
