@@ -1,5 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from datetime import datetime, timezone
 from bson import ObjectId
+from app.models import Conversation, Message
 from app.config.db import conversations_collection
 
 
@@ -11,19 +13,10 @@ class ConversationService:
     async def start_conversation(self, user_id: str) -> dict:
         """
         Starts a new conversation for a user and generates a conversation ID.
-
-        Args:
-            user_id (str): The ID of the user starting the conversation.
-
-        Returns:
-            dict: The response with a message and the conversation ID.
         """
-        conversation = {
-            "user_id": user_id,
-            "messages": [],
-            "status": "started",
-        }
-        result = await self.conversations_collection.insert_one(conversation)
+        conversation = Conversation(user_id=user_id, status="started", messages=[])
+
+        result = await self.conversations_collection.insert_one(conversation.dict())
         conversation_id = str(result.inserted_id)
         return {
             "message": f"Conversation started for user {user_id}",
@@ -36,29 +29,19 @@ class ConversationService:
     ) -> dict:
         """
         Sends a message in an ongoing conversation.
-
-        Args:
-            conversation_id (str): The ID of the ongoing conversation.
-            user_id (str): The ID of the user sending the message.
-            message (str): The message content from the user.
-
-        Returns:
-            dict: The response with the sent message and its echo response.
         """
-        # Hardcoding the agent's response as same as the user message for now
         agent_response = f"Echo: {message}"
 
-        # Append the message to the conversation's message list
-        conversation_update = {
-            "$push": {
-                "messages": {
-                    "user_id": user_id,
-                    "message": message,
-                    "response": agent_response,
-                    "status": "message_sent",
-                }
-            }
-        }
+        message_obj = Message(
+            user_id=user_id,
+            message=message,
+            response=agent_response,
+            status="message_sent",
+            timestamp=datetime.now(timezone.utc),
+        )
+
+        conversation_update = {"$push": {"messages": message_obj.model_dump()}}
+
         await self.conversations_collection.update_one(
             {"_id": ObjectId(conversation_id)}, conversation_update
         )
@@ -69,26 +52,22 @@ class ConversationService:
             "message": message,
             "response": agent_response,
             "status": "message_sent",
+            "timestamp": message_obj.timestamp.isoformat(),
         }
 
     async def get_conversation(self, conversation_id: str) -> dict:
         """
         Retrieves a conversation by its ID.
-
-        Args:
-            conversation_id (str): The ID of the conversation to retrieve.
-
-        Returns:
-            dict: The conversation details.
         """
         conversation = await self.conversations_collection.find_one(
             {"_id": ObjectId(conversation_id)}
         )
         if conversation:
+            conversation_obj = Conversation(**conversation)
             return {
                 "conversation_id": conversation_id,
-                "messages": conversation["messages"],
-                "status": conversation["status"],
+                "messages": conversation_obj.messages,
+                "status": conversation_obj.status,
             }
         else:
             return {"error": "Conversation not found"}

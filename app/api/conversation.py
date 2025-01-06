@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.models.conversation import (
+from app.dependencies import get_conversation_service
+from app.services.conversation import ConversationService
+from app.models import (
     StartConversationRequest,
     SendMessageRequest,
     SendMessageResponse,
 )
-from app.dependencies import get_conversation_service
-from app.services.conversation import ConversationService
 
 router = APIRouter()
 
@@ -51,6 +51,7 @@ async def send_message(
             message=result["message"],
             response=result["response"],
             status=result["status"],
+            timestamp=result["timestamp"],
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error sending message: {str(e)}")

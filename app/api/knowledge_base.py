@@ -1,6 +1,6 @@
 from typing import List
 from fastapi import APIRouter, HTTPException, Depends
-from app.models.knowledge_base import ApiDoc, ApiDocInResponse, SuccessResponse
+from app.models import ApiDoc, ApiDocInResponse, SuccessResponse
 from app.dependencies import get_insert_api_doc, get_search_api_doc
 
 router = APIRouter()
